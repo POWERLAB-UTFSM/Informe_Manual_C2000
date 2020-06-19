@@ -1,0 +1,143 @@
+\subsection{ePWM}
+\subsubsection{Introducción}
+
+
+Enhanced Pulse Width Modulator (ePWM) es un periférico clave en los sistemas de potencia, pues se utiliza en los sistema de control, necesarios para cualquier circuito electrónico que requiera conversión de energía.
+
+El módulo ePWM representa un canal PWM compuesto de 2 salidas PWM: EPWMxA y EPWMxB.
+Los módulos ePWM están encadenados por sincronización del clock, lo que permite que operen como un solo sistema cuando es requerido. Cada módulo ePWM tiene las siguientes características:
+\begin{itemize}
+	\item Contador de 16 bits con control de periodo (frecuencia).
+	\item Dos salidas PWM (EPWMxA y EPWMxB).
+	\item Generación de Dead-Band con control independiente de retardo de canto de subida y bajada.
+	\item Los eventos pueden disparar las interrupciones del CPU y el inicio de conversión del ADC.
+	\item Las salidas PWM están mapeadas a sus respectivos pines GPIO.
+	\item Cada modulo tiene 2 señales de inicio de conversión para el adc (EPWMxSOCA and EPWMxSOCB).
+\end{itemize}
+
+En la figura \ref{fig:7} se observa el diagrama de bloques del módulo PWM.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/diagrama_pwm}
+	\caption{Diagrama de bloques del módulo PWM, from \cite[page 1865]{tmr}.}
+	\label{fig:7}
+\end{figure}
+
+\subsubsection{Principio de operación de la PWM}
+A grandes rasgos, la PWM cuenta con un contador llamado Time-Base-Counter (TBCTR), el que cuenta hasta un cierto valor llamado Time-Base-Period-Register (TBPRD) y el tiempo que tarda en llegar desde 0 hasta TBPRD define el periodo de la PWM. La velocidad que el TBCTR cuenta desde un valor anterior al siguiente depende de la frecuencia del módulo ePWM (EPWMCLK). El Modo de cuenta de la PWM se observa en la figura \ref{fig:8}. Existen 4 modos de cuenta, los que se configuran con el registro TBCTL.bit.CTRMODE, en el modo de cuenta de subida, TBCTR va desde 0 hasta TBPRD, en el modo bajada, TBCTR va desde TBPRD hasta llegar a 0, y en el modo de subida-bajada cuenta desde 0 hasta TBPRD y luego desciende hasta 0 en el mismo periodo de tiempo, en el modo de cuenta Freeze, el contador se queda detenido y no realiza acción alguna (útil cuando se quiere dejar apagado el PWM).
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/modo_cuenta}
+	\caption{Modo de cuenta: Subida, Bajada, subida-bajada, from \cite[page 1874]{tmr}.}
+	\label{fig:8}
+\end{figure}
+\subsubsection{Frecuencia de la PWM}
+
+La frecuencia de la PWM generada depende del modo de cuenta que se esté utilizando (registro TBCTL.bit.CTRMODE):
+\paragraph*{Modo subida o bajada}
+$$T_{PWM} = (TBPRD + 1) \cdot T_{TBCLK}$$
+
+\paragraph*{Modo subida-bajada}
+$$T_{PWM} = 2 \cdot TBPRD \cdot T_{TBCLK}$$
+
+Para ser más precisos, la ecuación queda como:
+$$F_{PWM} = \frac{F_{SYSCLKOUT}}{4 \cdot TBPRD \cdot HSPCLKDIV \cdot CLKDIV} $$
+donde:
+\begin{itemize}
+	\item $F_{SYSCLKOUT}$ es la frecuencia del sistema (200MHz en caso de no haber cambiado nada).
+	\item TBPRD es el registro que se configura para definir la frecuencia de la PWM.
+	\item HSPCLKDIV Registro divisor del clock de la PWM.
+	\item CLKDIV Registro divisor del clock de la PWM.
+\end{itemize}
+
+\subsubsection{Comparador}
+El módulo ePWM tiene un submódulo Counter-Compare. Este valor se compara periódicamente con los registros counter-compare A (CMPA), counter-compare B (CMPB), counter-compare C (CMPC) y counter-compare D (CMPD). Es posible generar eventos cuando el contador base se iguala a algún registro de comparación (por ejemplo, TBCTR = CMPA).
+En los sistemas de control, el ciclo de trabajo se configura utilizando CMPA y CMPB.
+
+En la figura \ref{fig:9} se observa los valores de comparación de CMPA y CMPB y los eventos que se generan cuando TBCTR = CMPA y TBCTR = CMPB.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Imagenes/cmpa}
+	\caption{Counter-Compare Event Waveforms in Up-Count Mode, from \cite[page 1886]{tmr}.}
+	\label{fig:9}
+\end{figure}
+
+Si definimos la salida de la PWM en 1 cuando TBCTR = CMPA en subida (CAU = SET) y 0 cuando TBCTR = CMPA en bajada (CAD = CLEAR), para el modo de cuenta subida-bajada, observamos como cambia el ciclo de trabajo en la figura \ref{fig:10} definiendo el valor de CMPA.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{Imagenes/updown}
+	\caption{Up-Down-Count Mode Symmetrical Waveform, from \cite[page 1896]{tmr}.}
+	\label{fig:10}
+\end{figure}
+
+\subsubsection{Eventos e Interrupciones}
+Nuestro MCU posee 12 módulos ePWM en total, los que pueden hacer trigger hasta 24 interrupciones y cada módulo puede hacer trigger a uno o varios SOC para activar la conversión de los ADC de forma periódica.\par
+Con el registro ETSEL (Event Trigger Selection Register) podemos configurar los bits correspondientes a la generación de eventos, como:
+\begin{itemize}
+\item \textbf{INTSEL} ePWM Interrupt Selection Options, nos permite definir cuándo se genera un evento (por ejemplo, se pueden definir eventos cuando TBCTR sea igual 0, a TBPRD, CMPA, CMPB, etc).
+\item \textbf{INTEN} Enable ePWM Interrupt Generation, permite activar la generación de interrupciones.
+\item \textbf{SOCASEL} ePWMxSOCA Selection Options, determina cuándo el pulso SOC será generado (por ejemplo, cuando TBCTR sea igual a 0, a TBPRD, CMPA, CMPB, etc).
+\item \textbf{SOCAEN} Enable the ADC Start of Conversion A, permite generar el pulso de activación del SOC A.
+\end{itemize}
+
+El registro ETPS (Event Trigger Pre-Scale Register) nos permite configurar el número de eventos para generar interrupciones, SOC, etc:
+\begin{itemize}
+\item \textbf{INTPRD} ePWM Interrupt Period Select, determina cuántos eventos ETSEL[INTSEL] tienen que ocurrir antes de que se genere la interrupción.
+\item \textbf{SOCAPRD} ePWM ADC Start-of-Conversion A Event (EPWMxSOCA) Period
+Select, determina cuántos eventos ETSEL[SOCASEL] deben ocurrir antes que el pulso EPWMxSOCA sea generado.
+\end{itemize}
+
+
+\subsubsection{Dead-Band generator}
+El módulo ePWM también tiene un submódulo DB-Generator, el cual nos permite retardar el encendido o apagado de las salidas del ePWM. Las principales funciones del submódulo son:
+\begin{itemize}
+	\setlength{\itemindent}{-.0in}
+	\item Generar pares de señales (EPWMxA y EPWMxB) con una relación de banda muerta a partir de solo una entrada
+	\item Programar los pares para:
+	\setlength{\itemindent}{+.5in}
+	\item Active high (AH)
+	\item Active low (AL)	
+	\item Active high complementary (AHC)
+	\item Active low complementary (ALC)
+	\setlength{\itemindent}{-.0in}
+	\item Agregar retardo a los cantos de subida (RES)
+	\item Agregar retardo a los cantos de bajada (FED)
+\end{itemize}
+
+La gráfica que resume el funcionamiento del módulo dead-band generator se observa en la figura \ref{fig:11}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.43\textwidth]{Imagenes/deadband}
+	\caption{Dead-Band Waveforms for Typical Cases (0\% < Duty < 100\%), from \cite[page 1906]{tmr}.}
+	\label{fig:11}
+\end{figure}
+
+Los registros a configurar son:
+DBCTL (Dead-Band Generator Control Register)
+\begin{itemize}
+	\item \textbf{OUT\_MODE} Dead-Band Output Mode Control, con estos bits se activa el FED, RED o ambos.
+	\item \textbf{POLSEL} Polarity Select Control, permite seleccionar entre modos AHC, ALC, AH y AL.
+	\item \textbf{IN\_MODE} Dead-Band Input Mode Control, permite seleccionar la fuente (puede ser ePWMxA o ePWMxB) de los retardos tanto para el FED como el RED.
+\end{itemize}
+
+\textbf{DBRED} Dead-Band Generator Rising Edge Delay register, define el valor del canto de bajada.\par
+\textbf{DBFED} Dead-Band Generator Falling Edge Delay register, define el valor del canto de subida.\\
+\paragraph{Cálculo de RED y FED}
+\hfill \break \par
+Para encontrar estos valores se utiliza la siguiente ecuación:
+
+$$FED = DBFED\cdot T_{TBCLK}/2 $$
+Recordando que:
+$$T_{TBCLK} = 1/F_{TBCLK} = \frac{HSPCLKDIV \cdot CLKDIV}{F_{EPWMCLK}} = \frac{2 \cdot HSPCLKDIV \cdot CLKDIV}{F_{SYSCLKOUT}}$$
+Luego:
+
+$$DBFED = \frac{FED \cdot F_{SYSCLKOUT}}{HSPCLKDIV \cdot CLKDIV}$$
+
+Por ejemplo, si queremos un Dead Band de 500[ns], y tenemos que el ciclo del reloj es de 200[Mhz], HSPCLKDIV = 2 y CLKDIV = 1, nuestro registro DBFED a configurar debe ser igual a 50.\\
+RED se calcula de la misma forma:
+$$RED = DBRED \cdot T_{TBCLK}/2$$

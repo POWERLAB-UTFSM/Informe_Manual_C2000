@@ -1,0 +1,36 @@
+%Rectificadores trifásicos controlados de conmutación forzada -> El voltaje o corriente puede ser modulado (PWM), generando menos contaminación armónica, El factor de potencia puede ser controlado y puede incluso hacerse unitario. 
+
+%La topología para el driver AC-DC es un rectificador trifásico controlado tipo Boost de 2 niveles, de conmutación forzada, fuente de voltaje, el cual rectifica la tensión de entrada para obtener un voltaje constante en la salida, y debido a la capacidad de los semiconductores de permitir valores de encendido y apagado, es posible conmutar entre ellos cientos de veces en un periodo, lo que permite modular (PWM) la corriente o el voltaje, controlar el factor de potencia e incluso hacerlo unitario, entre otros \cite{rashid_2001}.
+
+% con un alto factor de potencia y bajo contenido armónico en la corriente de entrada
+
+%\begin{figure}[hbt!]
+%	\centering
+%	\includegraphics[width=\textwidth]{Imagenes/schematic_2.png}
+%	\caption{Rectificador 3ph-2L-Boost, con filtro LCL de entrada}
+%	\label{rect}
+%\end{figure}
+
+
+A grandes rasgos, un MCU es un circuito integrado programable, capaz de ejecutar instrucciones grabadas en su memoria, y sus principales unidades son: CPU, memoria y periféricos.
+
+En nuestro caso, el MCU utilizado es un Texas Instruments Familia C2000 serie Delfino modelo TMS320F28377D, el cual tiene doble CPU de 200Mhz, memoria flash de 1MB, 2 CLA, 4 módulos ADC, de 12-16 bits y hasta 12-24 canales, 24 canales PWM, entre otros.\\
+Para mayor información revisar los siguientes documentos:
+\begin{itemize}
+		\item Sitio web C2000 MCU: \href{https://www.ti.com/microcontrollers/c2000-real-time-control-mcus/overview.html}{https://www.ti.com/microcontrollers/c2000-real-time-control-mcus/overview.html}
+		\item TMS320F2837xD Datasheet: \href{https://www.ti.com/lit/ds/symlink/tms320f28377d.pdf}{https://www.ti.com/lit/ds/symlink/tms320f28377d.pdf}
+		\item Technical Reference Manual \href{https://www.ti.com/lit/ug/spruhm8i/spruhm8i.pdf}{https://www.ti.com/lit/ug/spruhm8i/spruhm8i.pdf}
+		\item TMS320F28377D control CARD R1.1 Information Guide: Revisar C2000ware o Control Suite.
+		
+		\item Card Pinout: \href{https://e2e.ti.com/cfs-file/__key/communityserver-discussions-components-files/171/2766.TMDSCNCD28377D_5F00_180cCARD_5F00_pinout_5F00_R1_5F00_1.pdf}{F28377D (180pin)}
+		
+		\item DIM100 Pinout \href{https://e2e.ti.com/cfs-file/__key/communityserver-discussions-components-files/171/TMDSCNCD28377D_5F00_100DIMmap_5F00_R1_5F00_1.pdf}{DIM PINOUT With adapter card}
+		
+		\item TMS320C28x CPU and Instruction Set: \href{http://www.ti.com/lit/ug/spru430f/spru430f.pdf}{http://www.ti.com/lit/ug/spru430f/spru430f.pdf}
+		\item 
+		\begin{flushleft}
+		TMS320C28x Floating Point Unit and Instruction Set: \href{http://www.ti.com/lit/ug/sprueo2b/sprueo2b.pdf}{http://www.ti.com/lit/ug/sprueo2b/sprueo2b.pdf}
+		\end{flushleft}
+\end{itemize}
+
+

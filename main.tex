@@ -1,0 +1,164 @@
+\documentclass[12pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amsfonts,amssymb}
+%\usepackage[light,condensed,math]{newtxmath}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{rotating}
+\usepackage{zref-xr}
+\usepackage{lscape}
+\usepackage{caption}
+\usepackage{subfigure}
+\usepackage{hyperref}
+\usepackage[left=2.5cm,right=2cm,top=2cm,bottom=3cm]{geometry}
+\usepackage{multicol}
+\usepackage{multirow}
+\hyphenpenalty 10000 	%para no cortar palabras
+\emergencystretch 10pt	%para no cortar palabras
+\usepackage{lastpage}   %para el número de página
+\usepackage{fancyhdr}
+\usepackage{float}
+\setlength{\headheight}{57pt} % arregla problema con paquete fancyhdr
+\usepackage{listings}
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+\usepackage[nottoc]{tocbibind}
+\usepackage{enumitem}
+\usepackage[document]{ragged2e}
+
+%----------------------------------------------------------------------------------------
+%	Nuevo comando para las lineas en la partada.
+%----------------------------------------------------------------------------------------
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+%----------------------------------------------------------------------------------------
+%	Encabezado
+%----------------------------------------------------------------------------------------
+
+\pagestyle{fancy}
+
+\lhead{
+\begin{minipage}{2cm}
+\includegraphics[height=1.5cm]{Imagenes/logo_usm2}
+\end{minipage}
+\hspace{0.05in}
+\parbox[r][1.8cm][c]{7cm}{\textsc{Universidad Técnica\\Federico Santa María\\Departamento de Electrónica}}
+}
+
+\rhead{
+\parbox[c][2cm][c]{7cm}{\flushright{\textsc{Proyecto de Titulación\\Uso de periféricos\\\vspace*{4mm}}}}
+}
+
+\cfoot{
+Página \thepage
+}
+%----------------------------------------------------------------------------------------
+%	Begin Document
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	Portada
+%----------------------------------------------------------------------------------------
+\thispagestyle{empty}
+\setcounter{page}{0}
+\thispagestyle{empty}
+%\numberwithin{equation}{section}%mejora numeración de ecuaciones
+
+
+\begin{titlepage}
+%\vspace*{0.3in}
+\vspace*{0.1in}
+\vspace*{0.3in}
+\begin{center}
+\vspace*{-1in}
+\begin{figure}[htb]
+\begin{center}
+    \subfigure{\includegraphics[width=0.3\textwidth]{Imagenes/logo_usm.jpg}}
+    \hspace*{1in}
+    \subfigure{\includegraphics[width=0.47\textwidth]{Imagenes/Logo_ac3e_extendido}}
+\end{center}
+\end{figure}
+
+\vspace*{1.5in}
+%\begin{Huge}
+%\textbf{ELO307 - Proyecto de Titulación}
+%\end{Huge}
+%\vspace*{0.2in}
+
+%\vspace*{0.2in}
+\begin{huge}
+\textbf{Proyecto de Memoria Hito 1}\\
+\end{huge}
+\vspace*{0.2in}
+\begin{Huge}
+%\textbf{"Diseño de un rectificador Trifásico con corrección de factor de potencia"}
+\textbf{Manual de uso y Primeros pasos con}\\
+\textbf{MCU TMS320F28377D Control Card}
+%\textbf{"Visualizador de Simulación } \\
+%\textbf{para Plataforma Metro Valparaíso"} \\
+\end{Huge}
+
+
+\vspace*{2in}
+\end{center}
+
+
+
+\begin{flushright}
+\begin{table}[h!]
+\begin{tabular}{|l|l|}
+\hline
+Presentado por & Matias A. Licanqueo Mansilla \\ \hline
+Profesor Guía & Marcelo A. Pérez \\ \hline
+Correferente & Alan Wilson \\ \hline
+Fecha & \today \\ \hline
+Contacto & matias.licanqueo.14@sansano.usm.cl \\ \hline
+Versión & 1.0.0 \\ \hline
+\end{tabular}
+\end{table}
+\end{flushright}
+\end{titlepage}
+\pagebreak
+
+
+%----------------------------------------------------------------------------------------
+% Cuerpo
+%----------------------------------------------------------------------------------------
+\tableofcontents
+
+\section{Acerca del MCU}
+    \input{1_descripcion.tex}
+\section{Primeros Pasos}
+    \input{1_1_primeros_pasos.tex}
+\section{Periféricos}
+    \input{2_ADC.tex}
+    \input{3_ePWM.tex}
+   \newpage
+%\section{Conclusiones}
+    \input{4_algo.tex}
+%\section{Resultados Esperados}
+%    \input{resultados.tex}
+
+%\newpage
+
+%\printbibliography
+
+%\bibliography{citation}{}
+%\bibliographystyle{plain}
+
+
+\bibliographystyle{plain}
+\bibliography{citation}
+
+
+%----------------------------------------------------------------------------------------
+%	End Document
+%----------------------------------------------------------------------------------------
+\end{document}

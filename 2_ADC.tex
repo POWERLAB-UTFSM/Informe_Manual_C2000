@@ -1,0 +1,114 @@
+Luego del acercamiento inicial, se debe comenzar a utilizar los periféricos del MCU para programar el código. En este documento no se señalan todos los detalles, sino si funcionamiento a grandes rasgos. Para mayor información, revisar el TRM.
+
+\subsection{ADC}
+\subsubsection{Introducción}
+Por sus siglas, ADC significa Analog Digital Converter, o sea, un dispositivo que traduce los valores de una señal analógica en una número binario que puede interpretar el sistema. El ADC del MCU a utilizar es de tipo SAR (successive approximation), con una resolución seleccionable 12 o 16 bits. Dicho ADC está compuesto por 2 partes, el $"core"$ y el $"wrapper"$. El $"core"$ está formado por los circuitos analógicos, como el multiplexor selector de canales, el circuito Sample-and-hold (S/H), etc. Por otro lado, el $"Wrapper"$ está compuesto por los circuitos digitales que controlan el ADC.\par
+El sistema de conversiones cuenta con 4 módulos ADC (A, B, C, D), y cada módulo cuenta con sus propios registros de selección de resolución, modos de entrada de señal (Single-ended y Differential), SOC, trigger sources, etc.
+
+En la figura \ref{fig:1} se observa el diagrama de bloques del módulo ADC.
+
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/diagrama_adc}
+	\caption{Diagrama de bloques del módulo ADC, reference \cite[page 1555]{tmr}.}
+	\label{fig:1}
+\end{figure}
+
+\subsubsection{Resultados de Conversión}
+Para interpretar los resultados obtenidos en la conversión del ADC, se debe hacer uso de la tabla de la figura \ref{fig:2} la cual nos entregan la ecuación de conversión de cuentas del adc, tanto para 12 bits como para 16 bits. También observamos la tabla de resultados de conversión desde el valor digital hacia su correspondiente análogo, en la figura \ref{fig:3}.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/analog_digital_formula}
+	\caption{Resultados de conversión Análogo a digital, reference \cite[page 1557]{tmr}.}
+	\label{fig:2}
+\end{figure}
+
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/digital_analog_formula}
+	\caption{Resultados de conversión Digital a Análogo, reference \cite[page 1557]{tmr}.}
+	\label{fig:3}
+\end{figure}
+
+\subsubsection{Principio de operación del SOC}
+El disparo del inicio de la secuencia de conversión del ADC está comandado por el SOC (Start-of-Conversion). Cada SOC es un conjunto de configuraciones que definen la conversión única de un solo canal, donde se configura: \textbf{Fuente del trigger} que inicia la conversión, el \textbf{Canal a convertir} y la \textbf{Ventana de adquisición}. Multiples SOC pueden ser configurados para el mismo Trigger, lo que generará una secuencia de conversiones.\par
+Cada SOC se configura desde su propio registro ADCSOCxCTL (donde la x es un numero entre 0 y 15), y donde cada modulo adc tiene sus propios registros SOC independientes.
+
+\paragraph{Fuente del trigger}
+Se configura el registro ADCSOCxCTL.TRIGSEL, definiendo la fuente que dará inicio a la conversión, los que pueden ser, timers del cpu, GPIO o ePWM.
+\paragraph{Canal a convertir}
+Se configura el registro ADCSOCxCTL.CHSEL.
+Selecciona qué ADC será convertido cuando llegue la señal de trigger.
+\paragraph{Ventana de adquisición}
+Se configura el registro ADCSOCxCTL.ACQPS.
+Corresponde al tiempo que tendrá permitido el circuito S/H para convertir el valor análogo en una palabra digital.
+Para calcular ACQPS utilizamos la siguiente fórmula:\\
+$\text{Ventana de adquisición} = (ACQPS + 1)\cdot(\text{System Clock (SYSCLK) cycle time)}$
+
+\paragraph{Ejemplo configuración SOC}
+\hfill \break \par
+En este ejemplo se configura el ADC-A con una conversión simple en el canal ADC-A1 cuando el contador del ePWM3 alcance su periodo. Para esto, asumimos que el ePWM3 está configurado para generar la señal SOCA o SOCB (referido al SOC del PWM, no al SOC del ADC). El SOC5 es elegido de forma arbitraria, cualquiera de los otros 15 SOC puede ser utilizado.
+Si queremos una ventana de adquisición de 100ns, con SYSCLK de 200Mhz, la ventana de adquisición será 100ns/(1/200Mhz) = 20 ciclos SYSCLK, por lo que ACQPS = 20 - 1 = 19.\\
+
+\scriptsize	
+\begin{lstlisting}[language=Matlab]
+AdcaRegs.ADCSOC5CTL.bit.CHSEL = 1; //SOC5 will convert ADCINA1
+AdcaRegs.ADCSOC5CTL.bit.ACQPS = 19; //SOC5 will use sample duration of 20 SYSCLK cycles
+AdcaRegs.ADCSOC5CTL.bit.TRIGSEL = 10; //SOC5 will begin conversion on ePWM3 SOCB
+\end{lstlisting}
+\normalsize
+
+Cuando el ePWM3 alcance su periodo y se genere la señal SOCB, el ADC comenzará a muestrear el canal ADC-A1 inmediatamente si el circuito S/H está desocupado. Si está ocupado, comenzará a muestrear dicho adc cuando el SOC5 gane prioridad.
+El resultado se guarda en el registro AdcaRegs.ADCRESULT5.
+
+
+\subsubsection{Entradas del ADC}
+Los modos de entradas del adc son 2, el modo Single-Ended, y el modo diferencial, los cuales se detallan a continuación:
+
+\paragraph{Modo Single-Ended}
+En este modo solo se utiliza 1 pin para la señal de entrada, pues está referenciado con tierra. Para este tipo de conversión se tiene 12 bits de resolución. Según el datasheet, el valor máximo de voltaje de entrada es 2.5 o 3V.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Imagenes/single_ended_adc}
+	\caption{Single-Ended Input Model, reference \cite[page 1560]{tmr}.}
+	\label{fig:4}
+\end{figure}
+
+\paragraph{Modo Diferencial}
+En este modo, se utilizan 2 pines para leer la diferencia de voltaje entre ellos. Para este tipo de conversión se tiene 16 bits de resolución.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Imagenes/differential_adc}
+	\caption{Differential Input Model, reference \cite[page 1560]{tmr}.}
+	\label{fig:5}
+\end{figure}
+
+\subsubsection{Prioridad de conversión del ADC}
+
+En cada módulo del ADC, cuando muchas banderas de SOC se activan al mismo tiempo (pues solo se puede convertir 1 entrada cada vez, ya que solo se tiene un circuito s/h por cada módulo), se debe elegir qué SOC se debe convertir primero. Existen 2 formas para determinar el orden de conversión:
+
+\paragraph{Round Robin}
+\hfill \break \par
+Es el método por defecto, consiste en que ningún SOC tiene una prioridad sobre otros, sino que la conversión de los ADC se realizará en función de un puntero llamado round robin pointer (RRPOINTER). Dicho puntero recorre de forma horaria los SOC desde el SOC0 hasta el SOC15. El RRPOINTER siempre apunta hacia el SOC siguiente al cual se ha realizado la conversión, por ejemplo, si la última conversión fue realizada por el SOC7, el RRPOINTER apuntará al SOC8, el cual ahora tendrá la mayor prioridad. Si se apunta hacia el SOC8 y simultáneamente llegan 2 señales de conversión de SOC6 y SOC9, debido a que el puntero recorre los SOC desde el 0 al 15, primero convertirá el SOC9 y luego el SOC6, y el puntero quedará con la prioridad de conversión apuntando hacia el SOC7.
+Un ejemplo se muestra en la figura \ref{fig:6} (ver TRM para más información).
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{Imagenes/round_robin}
+	\caption{Round Robin Priority Example, from \cite[page 1565]{tmr}.}
+	\label{fig:6}
+\end{figure}
+
+\paragraph{Modo de Alta Prioridad}
+\hfill \break \par
+En este modo, también existen el RRPOINTER, solo que se definen SOC prioritarios, los cuales se convertirán primero, independiente del puntero.
+
+\subsubsection{Principios de operación del EOC}
+Cada SOC tiene una correspondiente señal EOC (end-of-conversion). Dicha señal puede ser utilizada para disparar una interrupción en el ADC. El ADC puede ser configurado para generar el pulso EOC tanto al final de la conversión de voltaje o al final de la ventana de adquisición, a través del registro ADCCTL1.INTPULSEPOS.
+Cada módulo ADC tiene 4 interrupciones configurables, las cuales pueden ser disparadas por cualquiera de las 16 señales EOC.
+
+Esta señal es útil pues nos permite generar interrupciones una vez que tenemos el resultado de la conversión, y así poder utilizar dicho valor para realizar alguna operación o hacer trigger a algun periférico o utilizar el procesador matemático CLA.
